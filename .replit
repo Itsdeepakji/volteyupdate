@@ -1,0 +1,55 @@
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[[ports]]
+localPort = 8082
+externalPort = 3003
+
+[[ports]]
+localPort = 8083
+externalPort = 4200
+
+[[ports]]
+localPort = 22995
+externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+ESIMACCESS_ACCESS_CODE = "9f06ef13225c4489a830d65ae033b547"
+ESIMACCESS_SECRET_KEY = "fa0035998be0416d92a390cef8327d49"
+SMTP_HOST = "smtp.zeptomail.com"
+SMTP_PORT = "587"
+SMTP_USERNAME = "emailapikey"
+SMTP_PASSWORD = "wSsVR61z+EL1WKwpmmf4cuZunl1VA1j2F0h021r1viX7H6rDoccznkfHUweiHPlOFTFoQGEUorIomxoAhjQOj998y1pWACiF9mqRe1U4J3x17qnvhDzCXGxblhuNK4kBwwRum2FoFM0m+g=="
+SMTP_FROM_EMAIL = "info@voltey.ai"
+ESIMACCESS_BASE_URL = "https://api.esimaccess.com"
+
+[nix]
+channel = "stable-25_05"

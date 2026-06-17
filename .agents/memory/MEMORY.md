@@ -1,0 +1,3 @@
+- [Stripe Integration](stripe-integration.md) — price units, checkout flow, PI verification in orders route, key files.
+- [Babel JSX fragment quirk](babel-jsx-fragment.md) — avoid `<>...</>` fragments as root return in large TSX functions; Babel/Vite errors even when tsc passes. Use a plain `<div>` instead.
+- [Clone fidelity rules](clone-fidelity-rules.md) — user's mandatory rules for every UI clone: exact px dimensions, left/right proportions, font sizes+weights, always Poppins, always Lottie icons.

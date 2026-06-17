@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "Znfw0ApOikKwx427eyGUS"
+uri = "file://artifacts/esim-store/public/images/destination-bg.png"
+type = "image"
+title = "Travel destination background"

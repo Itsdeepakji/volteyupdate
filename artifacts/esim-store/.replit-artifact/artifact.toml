@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "eSIM Store"
+version = "1.0.0"
+id = "artifacts/esim-store"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22995
+
+[services.development]
+run = "pnpm --filter @workspace/esim-store run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/esim-store", "run", "build" ]
+publicDir = "artifacts/esim-store/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22995"
+BASE_PATH = "/"

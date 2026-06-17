@@ -1,0 +1,353 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: eSIM Store API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: destinations
+    description: eSIM destination browsing
+  - name: packages
+    description: eSIM package/plan operations
+  - name: orders
+    description: eSIM order operations
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /destinations:
+    get:
+      operationId: listDestinations
+      tags: [destinations]
+      summary: List all available eSIM destinations
+      description: Returns a deduplicated list of all destinations with their cheapest package price
+      responses:
+        "200":
+          description: List of destinations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  destinations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Destination"
+                required: [destinations]
+
+  /packages:
+    get:
+      operationId: listPackages
+      tags: [packages]
+      summary: List eSIM packages for a destination
+      parameters:
+        - name: locationCode
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Location code (e.g. "US", "CN", "EU-42")
+      responses:
+        "200":
+          description: List of packages for the location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  packages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Package"
+                  locationName:
+                    type: string
+                  locationCode:
+                    type: string
+                  relatedRegions:
+                    type: array
+                    description: Regional and global plans that also cover this destination
+                    items:
+                      $ref: "#/components/schemas/RelatedRegion"
+                required: [packages, locationName, locationCode, relatedRegions]
+
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create an eSIM order (purchase a plan)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "200":
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /esim/{transactionId}:
+    get:
+      operationId: getEsimCard
+      tags: [orders]
+      summary: Public eSIM card details (QR short-link target)
+      description: Returns eSIM details for the branded activation landing page. No auth required.
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: eSIM details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /orders/{transactionId}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order status and eSIM details
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResult"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    Destination:
+      type: object
+      properties:
+        locationCode:
+          type: string
+        locationName:
+          type: string
+        flagUrl:
+          type: string
+        lowestPrice:
+          type: number
+          description: Lowest price in USD cents
+        packageCount:
+          type: integer
+        isRegion:
+          type: boolean
+      required: [locationCode, locationName, flagUrl, lowestPrice, packageCount, isRegion]
+
+    Package:
+      type: object
+      properties:
+        packageCode:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+          description: Price in USD cents
+        retailPrice:
+          type: number
+          description: Retail price in USD cents
+        volume:
+          type: number
+          description: Data volume in bytes
+        duration:
+          type: integer
+        durationUnit:
+          type: string
+        speed:
+          type: string
+        locationCode:
+          type: string
+        locationName:
+          type: string
+        flagUrl:
+          type: string
+        dataType:
+          type: integer
+          description: 1=fixed, 2=unlimited
+        activeType:
+          type: integer
+        locationNetworkList:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocationNetwork"
+      required: [packageCode, slug, name, price, volume, duration, durationUnit, locationCode, locationName, flagUrl]
+
+    LocationNetwork:
+      type: object
+      properties:
+        locationName:
+          type: string
+        locationCode:
+          type: string
+        locationLogo:
+          type: string
+        operatorList:
+          type: array
+          items:
+            $ref: "#/components/schemas/Operator"
+      required: [locationName, locationCode]
+
+    Operator:
+      type: object
+      properties:
+        operatorName:
+          type: string
+        networkType:
+          type: string
+      required: [operatorName, networkType]
+
+    RelatedRegion:
+      type: object
+      description: A regional or global eSIM plan that also covers the queried destination
+      properties:
+        locationCode:
+          type: string
+        locationName:
+          type: string
+        lowestPrice:
+          type: number
+          description: Lowest retail price in USD cents
+        countryCount:
+          type: integer
+          description: Number of unique countries covered by this region
+        flagUrl:
+          type: string
+        isGlobal:
+          type: boolean
+      required: [locationCode, locationName, lowestPrice, countryCount, flagUrl, isGlobal]
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        packageCode:
+          type: string
+        quantity:
+          type: integer
+          default: 1
+        customerEmail:
+          type: string
+          format: email
+        packageName:
+          type: string
+        price:
+          type: number
+        paymentIntentId:
+          type: string
+          description: Stripe PaymentIntent ID — must be succeeded before order is fulfilled
+      required: [packageCode, customerEmail, packageName, price]
+
+    EsimProfile:
+      type: object
+      properties:
+        iccid:
+          type: string
+        ac:
+          type: string
+          description: Activation code / QR code data (LPA string)
+        qrCodeUrl:
+          type: string
+        smdpAddress:
+          type: string
+        matchingId:
+          type: string
+        apn:
+          type: string
+          description: Access Point Name for manual APN configuration
+        expiredTime:
+          type: string
+          description: ISO8601 datetime when the eSIM expires
+      required: [iccid]
+
+    OrderResult:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        orderNo:
+          type: string
+        status:
+          type: string
+        packageCode:
+          type: string
+        packageName:
+          type: string
+        esimProfiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/EsimProfile"
+        emailSent:
+          type: boolean
+      required: [transactionId, status]
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+      required: [error]
